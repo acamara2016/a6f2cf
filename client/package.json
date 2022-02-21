@@ -16,7 +16,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "cypress run --headless",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -36,6 +36,6 @@
     ]
   },
   "devDependencies": {
-    "cypress": "^8.5.0"
+    "cypress": "^8.7.0"
   }
 }
