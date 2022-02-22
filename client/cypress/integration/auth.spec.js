@@ -1,15 +1,16 @@
 /// <reference types="cypress" />
 
 describe("Auth Screens", () => {
+
   it("Loads signup page", () => {
-    cy.visit("http://localhost:3000/register");
+    cy.visit('http://localhost:3000/register');
 
     // Check expected UI elements.
     cy.contains("button", "Create");
   });
 
   it("Loads login page", () => {
-    cy.visit("http://localhost:3000/register");
+    cy.visit('http://localhost:3000/login');
     cy.contains("button", "Login").click();
 
     // Check expected UI elements.
@@ -19,9 +20,10 @@ describe("Auth Screens", () => {
     cy.url().should("include", "/login");
   });
 
-  it("can be logged in as Thomas", () => {
-    cy.visit("http://localhost:3000/login");
 
+  it("can be logged in as Thomas", () => {
+    cy.visit('http://localhost:3000/login');
+    
     cy.get("input[name=username]").type("thomas");
     cy.get("input[name=password]").type("123456");
 
