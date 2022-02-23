@@ -183,12 +183,6 @@ const Home = ({ user, logout }) => {
     const fetchConversations = async () => {
       try {
         const { data } = await axios.get('/api/conversations');
-        //sorting by id ASC
-        data.forEach(d=>{
-          d.messages.sort((a,b)=>{
-            return a.id - b.id;
-          });
-        })  
         setConversations(data);
       } catch (error) {
         console.error(error);
