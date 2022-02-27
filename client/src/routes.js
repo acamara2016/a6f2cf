@@ -87,7 +87,7 @@ const Routes = (props) => {
 
   useEffect(() => {
     if (user && user.id) history.push('/home');
-    else history.push('/register');
+    else history.push(history.location.pathname === '/login' ? 'login' : '/register');
   }, [user, history]);
 
   if (user?.isFetching) {
