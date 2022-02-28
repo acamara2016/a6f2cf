@@ -80,22 +80,33 @@ const Home = ({ user, logout }) => {
 
   const addNewConvo = useCallback(
     (recipientId, message) => {
-      conversations.forEach((convo) => {
+      const newState = [...conversations];
+      newState.forEach((convo) => {
         if (convo.otherUser.id === recipientId) {
           convo.messages.push(message);
           convo.latestMessageText = message.text;
           convo.id = message.conversationId;
         }
       });
-      setConversations([...conversations]);
+      const orderedConvos = sortSideBarConversationByDate(newState);
+      setConversations(orderedConvos);
     },
     [setConversations, conversations]
   );
+
+  const sortSideBarConversationByDate = (convos) => {
+    const convosCopy = [...convos];
+    convosCopy.sort((a, b)=>{
+      return new Date(b.latestUpdate) - new Date(a.latestUpdate);
+    });
+    return convosCopy;
+  }
 
   const addMessageToConversation = useCallback(
     (data) => {
       // if sender isn't null, that means the message needs to be put in a brand new convo
       const { message, sender = null } = data;
+      const newState = [...conversations];
       if (sender !== null) {
         const newConvo = {
           id: message.conversationId,
@@ -103,16 +114,19 @@ const Home = ({ user, logout }) => {
           messages: [message],
         };
         newConvo.latestMessageText = message.text;
+        newConvo.latestUpdate = message.updatedAt;
         setConversations((prev) => [newConvo, ...prev]);
       }
 
-      conversations.forEach((convo) => {
+      newState.forEach((convo) => {
         if (convo.id === message.conversationId) {
           convo.messages.push(message);
           convo.latestMessageText = message.text;
+          convo.latestUpdate = message.updatedAt;
         }
       });
-      setConversations([...conversations]);
+      const orderedConvos = sortSideBarConversationByDate(newState);
+      setConversations(orderedConvos);
     },
     [setConversations, conversations]
   );
