@@ -2,6 +2,7 @@ import React from 'react';
 import { Box } from '@material-ui/core';
 import { BadgeAvatar, ChatContent } from '../Sidebar';
 import { makeStyles } from '@material-ui/core/styles';
+import Notification from './Notification';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -17,16 +18,17 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Chat = ({ conversation, setActiveChat }) => {
+const Chat = ({ userId, conversation, setActiveChat, updateReadCount }) => {
   const classes = useStyles();
   const { otherUser } = conversation;
 
-  const handleClick = async (conversation) => {
-    await setActiveChat(conversation.otherUser.username);
+  const handleClick = async () => {
+    await setActiveChat(otherUser);
+    updateReadCount(userId, otherUser.id);
   };
 
   return (
-    <Box onClick={() => handleClick(conversation)} className={classes.root}>
+    <Box onClick={() => handleClick()} className={classes.root}>
       <BadgeAvatar
         photoUrl={otherUser.photoUrl}
         username={otherUser.username}
@@ -34,6 +36,7 @@ const Chat = ({ conversation, setActiveChat }) => {
         sidebar={true}
       />
       <ChatContent conversation={conversation} />
+      <Notification count={conversation.notification} />
     </Box>
   );
 };

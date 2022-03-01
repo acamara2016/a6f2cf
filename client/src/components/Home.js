@@ -21,7 +21,7 @@ const Home = ({ user, logout }) => {
 
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
-
+  const [previousOtherUserId, setPreviousOtherUserId] = useState(null);
   const classes = useStyles();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -53,6 +53,10 @@ const Home = ({ user, logout }) => {
     const { data } = await axios.post('/api/messages', body);
     return data;
   };
+  const updateMessage = async (body) => {
+    const { data } = await axios.put('/api/messages', body);
+    return data;
+  }
 
   const sendMessage = (data, body) => {
     socket.emit('new-message', {
@@ -94,6 +98,25 @@ const Home = ({ user, logout }) => {
     [setConversations, conversations]
   );
 
+  //updating message state for current user
+  const updateReadCount = async (currentUser, other)=>{
+    const newState = [...conversations];
+    const messageTobeUpdated = [];
+    newState.forEach(convo=>{
+      if(convo.otherUser.id===other){
+        convo.notification = 0;
+        convo.messages.forEach(message=>{
+          if(message.senderId===other && message.read===false){
+            messageTobeUpdated.push(message);
+            message.read = true;
+          }
+        })
+      }
+    });
+    if(messageTobeUpdated.length>0)
+      await updateMessage(messageTobeUpdated);
+    setConversations(newState);
+  };
   const sortSideBarConversationByDate = (convos) => {
     const convosCopy = [...convos];
     convosCopy.sort((a, b)=>{
@@ -111,29 +134,61 @@ const Home = ({ user, logout }) => {
         const newConvo = {
           id: message.conversationId,
           otherUser: sender,
+          notification: 0,
           messages: [message],
         };
         newConvo.latestMessageText = message.text;
         newConvo.latestUpdate = message.updatedAt;
         setConversations((prev) => [newConvo, ...prev]);
       }
-
       newState.forEach((convo) => {
-        if (convo.id === message.conversationId) {
+        if (convo.id === message.conversationId && data.message.senderId===convo.otherUser.id) {
+          let updatedNotification = 0;
+          if(previousOtherUserId!==convo.otherUser.id){
+            updatedNotification = convo.notification+1;
+          }
+          convo.notification = updatedNotification;
+          convo.read = false;
           convo.messages.push(message);
           convo.latestMessageText = message.text;
           convo.latestUpdate = message.updatedAt;
+        }else if(convo.id === message.conversationId){
+          convo.read = false;
+          convo.messages.push(message);
+          convo.latestMessageText = message.text;
         }
       });
       const orderedConvos = sortSideBarConversationByDate(newState);
       setConversations(orderedConvos);
     },
-    [setConversations, conversations]
+    [setConversations, conversations, previousOtherUserId]
   );
 
-  const setActiveChat = (username) => {
-    setActiveConversation(username);
+  const setActiveChat = (otherUser) => {
+    //if user was in a previous chat, leave chat before joining chat
+    if(previousOtherUserId!==null)
+      socket.emit('leave-chat', user.id, previousOtherUserId);
+    socket.emit('join-chat', user.id, otherUser.id);
+    setActiveConversation(otherUser.username);
+    setPreviousOtherUserId(otherUser.id);
   };
+
+  //update when other user read unread message from currentUser
+  const handleReadUpdate = useCallback(async(currentUser, other)=>{
+    const newState = [...conversations];
+    const messageTobeUpdated = [];
+    newState.forEach(convo=>{
+      if(convo.otherUser.id===currentUser){
+        convo.messages.forEach(message=>{
+          if(message.senderId===other && message.read===false){
+            messageTobeUpdated.push(message);
+            message.read = true;
+          }
+        }) 
+      }
+    })
+    setConversations(newState);
+  },[setConversations, conversations]);
 
   const addOnlineUser = useCallback((id) => {
     setConversations((prev) =>
@@ -170,6 +225,7 @@ const Home = ({ user, logout }) => {
     socket.on('add-online-user', addOnlineUser);
     socket.on('remove-offline-user', removeOfflineUser);
     socket.on('new-message', addMessageToConversation);
+    socket.on('user-in-chat', handleReadUpdate);
 
     return () => {
       // before the component is destroyed
@@ -177,8 +233,9 @@ const Home = ({ user, logout }) => {
       socket.off('add-online-user', addOnlineUser);
       socket.off('remove-offline-user', removeOfflineUser);
       socket.off('new-message', addMessageToConversation);
+      socket.off('user-in-chat', handleReadUpdate);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, handleReadUpdate, socket]);
 
   useEffect(() => {
     // when fetching, prevent redirect
@@ -197,6 +254,7 @@ const Home = ({ user, logout }) => {
     const fetchConversations = async () => {
       try {
         const { data } = await axios.get('/api/conversations');
+        console.log(data);
         setConversations(data);
       } catch (error) {
         console.error(error);
@@ -224,6 +282,7 @@ const Home = ({ user, logout }) => {
           clearSearchedUsers={clearSearchedUsers}
           addSearchedUsers={addSearchedUsers}
           setActiveChat={setActiveChat}
+          updateReadCount={updateReadCount}
         />
         <ActiveChat
           activeConversation={activeConversation}
