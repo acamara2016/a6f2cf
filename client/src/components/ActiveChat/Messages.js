@@ -5,7 +5,7 @@ import moment from 'moment';
 
 const Messages = (props) => {
   const { messages, otherUser, userId } = props;
-  const messageLength = messages.length;
+  const latestIndex = messages.length-1;
   return (
     <Box>
       {messages.map((message, index) => {
@@ -15,7 +15,7 @@ const Messages = (props) => {
             key={message.id} 
             text={message.text} 
             time={time} 
-            read={messageLength-1===index && message.read===true}
+            read={latestIndex===index && message.read}
             readBy={otherUser}
           />
  

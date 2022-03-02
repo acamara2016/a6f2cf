@@ -56,17 +56,21 @@ router.post("/", async (req, res, next) => {
 //update message status to read true 
 router.put("/", async (req, res, next) => {
   try {
+    const senderId = req.user.id;
+    const messages = [...req.body];
+     
     if (!req.user) {
       return res.sendStatus(401);
+    } else if(messages[0].senderId===senderId){
+      return res.sendStatus(403);
     }
-    const messages = [...req.body];
     messages.forEach(m=>{
       Message.update(
         {read: true},
         {where: {id: m.id}}
       )
     });
-    res.json({messages});
+    res.sendStatus(204);
   } catch (error) {
     next(error);
   }

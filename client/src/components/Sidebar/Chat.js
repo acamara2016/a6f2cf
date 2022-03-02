@@ -35,7 +35,10 @@ const Chat = ({ userId, conversation, setActiveChat, updateReadCount }) => {
         online={otherUser.online}
         sidebar={true}
       />
-      <ChatContent conversation={conversation} />
+      <ChatContent 
+        unread={conversation.notification>0}
+        conversation={conversation} 
+      />
       <Notification count={conversation.notification} />
     </Box>
   );

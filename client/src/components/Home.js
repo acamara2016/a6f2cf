@@ -53,10 +53,7 @@ const Home = ({ user, logout }) => {
     const { data } = await axios.post('/api/messages', body);
     return data;
   };
-  const updateMessage = async (body) => {
-    const { data } = await axios.put('/api/messages', body);
-    return data;
-  }
+ 
 
   const sendMessage = (data, body) => {
     socket.emit('new-message', {
@@ -106,7 +103,7 @@ const Home = ({ user, logout }) => {
       if(convo.otherUser.id===other){
         convo.notification = 0;
         convo.messages.forEach(message=>{
-          if(message.senderId===other && message.read===false){
+          if(message.senderId===other && !message.read){
             messageTobeUpdated.push(message);
             message.read = true;
           }
@@ -114,7 +111,7 @@ const Home = ({ user, logout }) => {
       }
     });
     if(messageTobeUpdated.length>0)
-      await updateMessage(messageTobeUpdated);
+      await axios.put('/api/messages', messageTobeUpdated);
     setConversations(newState);
   };
   const sortSideBarConversationByDate = (convos) => {
@@ -180,7 +177,7 @@ const Home = ({ user, logout }) => {
     newState.forEach(convo=>{
       if(convo.otherUser.id===currentUser){
         convo.messages.forEach(message=>{
-          if(message.senderId===other && message.read===false){
+          if(message.senderId===other && !message.read){
             messageTobeUpdated.push(message);
             message.read = true;
           }
@@ -254,7 +251,6 @@ const Home = ({ user, logout }) => {
     const fetchConversations = async () => {
       try {
         const { data } = await axios.get('/api/conversations');
-        console.log(data);
         setConversations(data);
       } catch (error) {
         console.error(error);
