@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { Conversation, Message } = require("../../db/models");
 const onlineUsers = require("../../onlineUsers");
+const { Op } = require("sequelize");
 const activeChats = require("../../activeChats");
 
 // expects {recipientId, text, conversationId } in body (conversationId will be null if no conversation exists yet)
@@ -14,10 +15,9 @@ router.post("/", async (req, res, next) => {
     // if we already know conversation id, we can save time and just add it to message and return
     if (conversationId) {
       let read = false;
-      //check activeChats map if both users are in the same chat  
-      if(activeChats[recipientId]!==undefined && activeChats[senderId]!==undefined && activeChats[recipientId].includes(senderId) && activeChats[senderId].includes(recipientId)){
-        read = true;
-      }
+      if(activeChats[recipientId] && activeChats[senderId])
+        activeChats[recipientId].includes(senderId) && activeChats[senderId].includes(recipientId) ? read = true : read = false;
+    
       const message = await Message.create({ 
         senderId, 
         text, 
@@ -56,24 +56,35 @@ router.post("/", async (req, res, next) => {
 //update message status to read true 
 router.put("/", async (req, res, next) => {
   try {
-    const senderId = req.user.id;
-    const messages = [...req.body];
-     
     if (!req.user) {
       return res.sendStatus(401);
-    } else if(messages[0].senderId===senderId){
+    }
+    const userId = req.user.id;
+    const { conversationId } = req.body;
+    const matchingConvo = await Conversation.findOne({
+      where: {
+        id: conversationId,
+        [Op.or]: [
+          { user1Id: userId },
+          { user2Id: userId },
+        ]
+      }
+    });
+    if (matchingConvo === null) {
       return res.sendStatus(403);
     }
-    messages.forEach(m=>{
-      Message.update(
-        {read: true},
-        {where: {id: m.id}}
-      )
-    });
+    await Message.update(
+      { read: true },
+      {
+        where: {
+          senderId: { [Op.ne]: userId },
+          conversationId: conversationId
+        },
+      }
+    );
     res.sendStatus(204);
   } catch (error) {
     next(error);
   }
 });
-
 module.exports = router;

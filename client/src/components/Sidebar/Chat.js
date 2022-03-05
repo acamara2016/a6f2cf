@@ -24,7 +24,7 @@ const Chat = ({ userId, conversation, setActiveChat, updateReadCount }) => {
 
   const handleClick = async () => {
     await setActiveChat(otherUser);
-    updateReadCount(userId, otherUser.id);
+    updateReadCount(conversation.id);
   };
 
   return (

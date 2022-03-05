@@ -96,23 +96,19 @@ const Home = ({ user, logout }) => {
   );
 
   //updating message state for current user
-  const updateReadCount = async (currentUser, other)=>{
-    const newState = [...conversations];
-    const messageTobeUpdated = [];
-    newState.forEach(convo=>{
-      if(convo.otherUser.id===other){
-        convo.notification = 0;
-        convo.messages.forEach(message=>{
-          if(message.senderId===other && !message.read){
-            messageTobeUpdated.push(message);
-            message.read = true;
-          }
-        })
-      }
-    });
-    if(messageTobeUpdated.length>0)
-      await axios.put('/api/messages', messageTobeUpdated);
-    setConversations(newState);
+  const updateReadCount = async (conversationId) => {
+    setConversations((prev) =>
+      prev.map((convo) => {
+        if (convo.id === conversationId) {
+          const convoCopy = { ...convo };
+          convoCopy.notification = 0;
+          return convoCopy;
+        } else {
+          return convo;
+        }
+      })
+    );
+    await axios.put('/api/messages', { conversationId });
   };
   const sortSideBarConversationByDate = (convos) => {
     const convosCopy = [...convos];
